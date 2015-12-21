@@ -24,7 +24,6 @@ Pod::Spec.new do |s|
   s.resources    = "JSPatch/*.js"
   s.frameworks   = "Foundation"
   s.weak_framework = "JavaScriptCore"
-  s.default_subspec = 'Core'
 
   s.subspec 'Core' do |ss|
     ss.source_files = "JSPatch/*.{h,m}"
