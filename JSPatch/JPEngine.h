@@ -70,8 +70,6 @@
 + (NSMutableDictionary *)registeredStruct;
 @end
 
-
-
 @interface JPExtension : NSObject
 + (void)main:(JSContext *)context;
 
@@ -84,4 +82,17 @@
 + (void)getStructDataWidthDict:(void *)structData dict:(NSDictionary *)dict structDefine:(NSDictionary *)structDefine;
 + (NSDictionary *)getDictOfStruct:(void *)structData structDefine:(NSDictionary *)structDefine;
 @end
+
+@interface JPMethodSwizzlingStore : NSObject
+
++(JPMethodSwizzlingStore* )sharedInstance;
+
+-(void)restoreMethodSwizzling;
+
+-(void)storeMethodSwizzling:(SEL)selector
+                 orignalImp:(IMP)orignalImp
+                     newImp:(IMP)newImp
+                      class:(Class)klass typeDescription:(const char*)typeDescription;
+@end
+
 

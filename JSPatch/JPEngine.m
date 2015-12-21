@@ -840,6 +840,9 @@ static void overrideMethod(Class cls, NSString *selectorName, JSValue *function,
     _JSOverideMethods[cls][JPSelectorName] = function;
     
     class_addMethod(cls, JPSelector, msgForwardIMP, typeDescription);
+    
+    [[JPMethodSwizzlingStore sharedInstance] storeMethodSwizzling:selector orignalImp:originalImp newImp:msgForwardIMP class:cls typeDescription:typeDescription];
+
 }
 
 #pragma mark -
@@ -1498,3 +1501,70 @@ static id _unboxOCObjectToJS(id obj)
     return getDictOfStruct(structData, structDefine);
 }
 @end
+
+@interface _MethodInfo : NSObject
+
+@property(nonatomic) SEL selector;
+@property(nonatomic) IMP orignalImp;
+@property(nonatomic) IMP newImp;
+@property(nonatomic) Class klass;
+@property(nonatomic,copy) NSString* typeDescription;
+
+@end
+
+@implementation _MethodInfo
+
+@end
+
+@implementation JPMethodSwizzlingStore {
+    NSMutableArray * _storeMethodList;
+}
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        _storeMethodList = [[NSMutableArray alloc] init];
+    }
+    return self;
+}
+
+static JPMethodSwizzlingStore * __sharedInstance = nil;
+
++(JPMethodSwizzlingStore* )sharedInstance
+{
+    static dispatch_once_t onceToken;
+    if (!__sharedInstance) {
+        dispatch_once(&onceToken, ^{
+            __sharedInstance = [JPMethodSwizzlingStore new];
+        });
+    }
+    return __sharedInstance;
+}
+
+-(void)storeMethodSwizzling:(SEL)selector
+                 orignalImp:(IMP)orignalImp
+                     newImp:(IMP)newImp
+                      class:(Class)klass typeDescription:(const char*)typeDescription
+{
+    _MethodInfo *data = [_MethodInfo new];
+    data.selector = selector;
+    data.orignalImp = orignalImp;
+    data.newImp = newImp;
+    data.klass = klass;
+    data.typeDescription = [NSString stringWithUTF8String:typeDescription];
+    [_storeMethodList addObject:data];
+}
+
+-(void)restoreMethodSwizzling
+{
+    [_storeMethodList enumerateObjectsUsingBlock:^(_MethodInfo* data, NSUInteger idx, BOOL *stop) {
+        if (data.orignalImp) {
+            class_replaceMethod(data.klass, data.selector, data.orignalImp, data.typeDescription.UTF8String);
+        }
+        [_storeMethodList removeObject:data];
+        
+    }];
+}
+
+@end
+
